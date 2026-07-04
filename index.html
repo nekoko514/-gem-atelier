@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gem Atelier</title>
+<style>
+  :root {
+    --ink: #0f0c14;
+    --velvet: #171221;
+    --gold: #d4b483;
+    --gold-dim: #8a7658;
+    --paper: #efe9de;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--ink); }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+    color: var(--paper);
+    background:
+      radial-gradient(ellipse 70% 45% at 50% 24%, #2a1e3c 0%, transparent 68%),
+      radial-gradient(ellipse 95% 75% at 50% 105%, #08060d 0%, transparent 70%),
+      linear-gradient(180deg, #171221 0%, #0d0a13 100%);
+  }
+  #stage { position: fixed; inset: 0; touch-action: none; }
+  canvas { display: block; width: 100%; height: 100%; }
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    pointer-events: none;
+    text-align: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 0;
+  }
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: .34em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(24px, 6vw, 36px);
+    letter-spacing: .12em;
+    text-shadow: 0 2px 24px rgba(0,0,0,.65);
+  }
+  .sub {
+    margin-top: 5px;
+    font-size: 11px;
+    letter-spacing: .18em;
+    color: rgba(212, 180, 131, .68);
+  }
+  #hint {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 39%;
+    z-index: 2;
+    pointer-events: none;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: .28em;
+    color: rgba(212, 180, 131, .42);
+    transition: opacity .5s ease;
+  }
+  #panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    padding: 10px 0 calc(env(safe-area-inset-bottom, 0px) + 12px);
+    background: linear-gradient(to top, rgba(10,8,16,.95) 62%, transparent);
+  }
+  .rowlabel {
+    font-size: 9px;
+    letter-spacing: .32em;
+    color: rgba(212,180,131,.48);
+    padding: 0 20px 5px;
+    text-transform: uppercase;
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 18px 10px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .row::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto;
+    min-height: 34px;
+    border: 1px solid rgba(212,180,131,.24);
+    border-radius: 999px;
+    padding: 8px 15px;
+    color: rgba(239,233,222,.72);
+    background: rgba(23,18,33,.64);
+    font: 12px/1 "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+    letter-spacing: .08em;
+    cursor: pointer;
+  }
+  .row.cuts .chip { border-radius: 8px; font-size: 11px; }
+  .chip.on { color: var(--ink); background: var(--gold); border-color: var(--gold); font-weight: 700; }
+  .chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  #tuneBtn {
+    position: fixed;
+    right: 14px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 158px);
+    z-index: 4;
+    border: 1px solid rgba(212,180,131,.42);
+    border-radius: 999px;
+    padding: 8px 14px;
+    color: var(--gold);
+    background: rgba(23,18,33,.74);
+    font: 11px/1 "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+    letter-spacing: .18em;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+  }
+  #tune {
+    position: fixed;
+    right: 12px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 200px);
+    z-index: 4;
+    display: none;
+    width: min(78vw, 280px);
+    padding: 16px 16px 12px;
+    border: 1px solid rgba(212,180,131,.30);
+    border-radius: 8px;
+    background: rgba(16,12,24,.90);
+    backdrop-filter: blur(12px);
+  }
+  #tune.open { display: block; }
+  .knob { margin-bottom: 12px; }
+  .knob label {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+    color: rgba(212,180,131,.72);
+    font-size: 10px;
+    letter-spacing: .20em;
+  }
+  input[type=range] {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    appearance: none;
+    outline: none;
+    background: rgba(212,180,131,.25);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    background: var(--paper);
+    box-shadow: 0 1px 6px rgba(0,0,0,.5);
+  }
+  #hueRange { background: linear-gradient(to right, #f55, #ff5, #5f5, #5ff, #55f, #f5f, #f55); }
+  #toast {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    left: 50%;
+    z-index: 9;
+    display: none;
+    max-width: 88vw;
+    transform: translateX(-50%);
+    border: 1px solid rgba(255,120,120,.5);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #ffd7d7;
+    background: rgba(90,20,30,.92);
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<header>
+  <div class="eyebrow">Gem Atelier / Optics of Light</div>
+  <h1 id="title">Diamond</h1>
+  <div class="sub" id="sub">Brilliant cut</div>
+</header>
+<p id="hint">DRAG TO TURN</p>
+<div id="toast"></div>
+<button id="tuneBtn" type="button">TUNE</button>
+<div id="tune">
+  <div class="knob"><label><span>HUE</span><span id="hueVal"></span></label><input type="range" id="hueRange" min="0" max="360" value="210"></div>
+  <div class="knob"><label><span>SAT</span><span id="satVal"></span></label><input type="range" id="satRange" min="0" max="100" value="45"></div>
+  <div class="knob"><label><span>SIZE</span><span id="sizeVal"></span></label><input type="range" id="sizeRange" min="45" max="120" value="72"></div>
+</div>
+<div id="panel">
+  <div class="rowlabel">Material</div>
+  <div class="row" id="rowMat"></div>
+  <div class="rowlabel">Cut</div>
+  <div class="row cuts" id="rowCut"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+
+const toastEl = document.getElementById('toast');
+function toast(message) {
+  toastEl.textContent = message;
+  toastEl.style.display = 'block';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toastEl.style.display = 'none'; }, 8000);
+}
+window.addEventListener('error', event => toast('[error] ' + event.message));
+
+if (!window.THREE) {
+  toast('Three.js could not be loaded. Check the network connection.');
+  throw new Error('Three.js is unavailable');
+}
+
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 80);
+camera.position.set(0, 0.18, 5.0);
+
+const root = new THREE.Group();
+scene.add(root);
+
+const keyLight = new THREE.DirectionalLight(0xfff4de, 2.6);
+keyLight.position.set(3.5, 4.5, 4.0);
+scene.add(keyLight);
+const rimLight = new THREE.DirectionalLight(0xaec7ff, 1.7);
+rimLight.position.set(-4.0, 1.5, 2.5);
+scene.add(rimLight);
+scene.add(new THREE.AmbientLight(0x45395a, 1.2));
+
+const sparkleGroup = new THREE.Group();
+scene.add(sparkleGroup);
+const sparkleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.78 });
+for (let i = 0; i < 36; i++) {
+  const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.012 + Math.random() * 0.018, 0), sparkleMaterial.clone());
+  const radius = 1.65 + Math.random() * 1.35;
+  const angle = Math.random() * Math.PI * 2;
+  star.position.set(Math.cos(angle) * radius, -0.8 + Math.random() * 2.8, Math.sin(angle) * radius - 1.2);
+  star.userData.phase = Math.random() * Math.PI * 2;
+  star.userData.speed = 0.7 + Math.random() * 1.4;
+  sparkleGroup.add(star);
+}
+
+const materials = {
+  diamond: { name: 'Diamond', hue: 210, sat: 45, options: { color: 0xdfeeff, roughness: 0.04, metalness: 0.0, transparent: true, opacity: 0.72, reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.02 } },
+  crystal: { name: 'Crystal', hue: 190, sat: 18, options: { color: 0xe7fbff, roughness: 0.02, metalness: 0.0, transparent: true, opacity: 0.55, reflectivity: 0.9, clearcoat: 1.0 } },
+  ruby: { name: 'Ruby', hue: 350, sat: 90, options: { color: 0xcc1d55, roughness: 0.16, metalness: 0.0, reflectivity: 0.8, clearcoat: 0.95 } },
+  opal: { name: 'Opal', hue: 28, sat: 58, options: { color: 0xfff2dc, roughness: 0.32, metalness: 0.0, reflectivity: 0.62, clearcoat: 0.72 } },
+  emerald: { name: 'Emerald', hue: 146, sat: 82, options: { color: 0x1fd28b, roughness: 0.10, metalness: 0.0, reflectivity: 0.9, clearcoat: 1.0 } },
+  amethyst: { name: 'Amethyst', hue: 278, sat: 76, options: { color: 0x8d55ff, roughness: 0.11, metalness: 0.0, reflectivity: 0.82, clearcoat: 1.0 } },
+  amber: { name: 'Amber', hue: 38, sat: 88, options: { color: 0xffaa35, roughness: 0.18, metalness: 0.0, transparent: true, opacity: 0.82, reflectivity: 0.75, clearcoat: 0.86 } }
+};
+
+const cuts = {
+  brilliant: { name: 'Brilliant', build: () => new THREE.OctahedronGeometry(1.22, 3) },
+  fine: { name: 'Fine', build: () => new THREE.IcosahedronGeometry(1.18, 3) },
+  rose: { name: 'Rose', build: () => new THREE.DodecahedronGeometry(1.14, 2) },
+  emerald: { name: 'Emerald', build: () => makeEmeraldGeometry() },
+  princess: { name: 'Princess', build: () => makePrincessGeometry() },
+  cushion: { name: 'Cushion', build: () => makeCushionGeometry() },
+  pear: { name: 'Pear', build: () => makePearGeometry() },
+  heart: { name: 'Heart', build: () => makeHeartGeometry() },
+  cabochon: { name: 'Cabochon', build: () => new THREE.SphereGeometry(1.05, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.74) },
+  rough: { name: 'Rough', build: () => new THREE.IcosahedronGeometry(1.12, 1) }
+};
+
+function finishGeometry(geometry, scaleX = 1, scaleY = 1, scaleZ = 1) {
+  geometry = geometry.toNonIndexed ? geometry.toNonIndexed() : geometry;
+  geometry.center();
+  geometry.scale(scaleX, scaleY, scaleZ);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+function makeEmeraldGeometry() {
+  return finishGeometry(new THREE.BoxGeometry(1.55, 1.95, 0.82, 2, 3, 2));
+}
+function makePrincessGeometry() {
+  return finishGeometry(new THREE.CylinderGeometry(0.72, 1.05, 1.7, 4, 2, false, Math.PI / 4), 1.0, 1.0, 0.82);
+}
+function makeCushionGeometry() {
+  const shape = new THREE.Shape();
+  const w = 0.9, r = 0.34;
+  shape.moveTo(-w + r, -w);
+  shape.lineTo(w - r, -w);
+  shape.quadraticCurveTo(w, -w, w, -w + r);
+  shape.lineTo(w, w - r);
+  shape.quadraticCurveTo(w, w, w - r, w);
+  shape.lineTo(-w + r, w);
+  shape.quadraticCurveTo(-w, w, -w, w - r);
+  shape.lineTo(-w, -w + r);
+  shape.quadraticCurveTo(-w, -w, -w + r, -w);
+  return finishGeometry(new THREE.ExtrudeGeometry(shape, { depth: 0.72, bevelEnabled: true, bevelThickness: 0.24, bevelSize: 0.16, bevelSegments: 1, curveSegments: 8 }), 1.0, 1.0, 1.0);
+}
+function makePearGeometry() {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 1.14);
+  shape.quadraticCurveTo(0.62, 0.42, 0.68, -0.16);
+  shape.quadraticCurveTo(0.64, -0.88, 0, -0.94);
+  shape.quadraticCurveTo(-0.64, -0.88, -0.68, -0.16);
+  shape.quadraticCurveTo(-0.62, 0.42, 0, 1.14);
+  return finishGeometry(new THREE.ExtrudeGeometry(shape, { depth: 0.62, bevelEnabled: true, bevelThickness: 0.26, bevelSize: 0.16, bevelSegments: 1, curveSegments: 10 }));
+}
+function makeHeartGeometry() {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -1.0);
+  shape.bezierCurveTo(-1.3, -0.16, -1.12, 0.72, -0.48, 0.76);
+  shape.bezierCurveTo(-0.18, 0.78, 0, 0.46, 0, 0.28);
+  shape.bezierCurveTo(0, 0.46, 0.18, 0.78, 0.48, 0.76);
+  shape.bezierCurveTo(1.12, 0.72, 1.3, -0.16, 0, -1.0);
+  return finishGeometry(new THREE.ExtrudeGeometry(shape, { depth: 0.58, bevelEnabled: true, bevelThickness: 0.22, bevelSize: 0.14, bevelSegments: 1, curveSegments: 10 }));
+}
+
+let currentMaterial = 'diamond';
+let currentCut = 'brilliant';
+let gem = new THREE.Mesh(finishGeometry(cuts.brilliant.build()), createMaterial(materials.diamond));
+gem.rotation.set(-0.18, 0.25, 0.05);
+root.add(gem);
+root.scale.setScalar(0.72);
+
+const titleEl = document.getElementById('title');
+const subEl = document.getElementById('sub');
+const hueRange = document.getElementById('hueRange');
+const satRange = document.getElementById('satRange');
+const sizeRange = document.getElementById('sizeRange');
+const hueVal = document.getElementById('hueVal');
+const satVal = document.getElementById('satVal');
+const sizeVal = document.getElementById('sizeVal');
+const rowMat = document.getElementById('rowMat');
+const rowCut = document.getElementById('rowCut');
+
+function createMaterial(config) {
+  const material = new THREE.MeshPhysicalMaterial(Object.assign({
+    side: THREE.DoubleSide,
+    flatShading: true,
+    emissive: 0x08050c,
+    envMapIntensity: 1.0
+  }, config.options));
+  return material;
+}
+function colorFromHue(hue, saturation) {
+  const color = new THREE.Color();
+  color.setHSL(hue / 360, saturation / 100, 0.58);
+  return color;
+}
+function setHue(value) {
+  hueRange.value = value;
+  hueVal.textContent = value + 'deg';
+  gem.material.color.copy(colorFromHue(Number(value), Number(satRange.value)));
+}
+function setSat(value) {
+  satRange.value = value;
+  satVal.textContent = value + '%';
+  gem.material.color.copy(colorFromHue(Number(hueRange.value), Number(value)));
+}
+function setSize(value) {
+  sizeRange.value = value;
+  root.scale.setScalar(Number(value) / 100);
+  sizeVal.textContent = value + '%';
+}
+function updateHeader() {
+  titleEl.textContent = materials[currentMaterial].name;
+  subEl.textContent = cuts[currentCut].name + ' cut';
+}
+function markChips(row, key) {
+  row.querySelectorAll('.chip').forEach(chip => chip.classList.toggle('on', chip.dataset.key === key));
+}
+function selectMaterial(key) {
+  currentMaterial = key;
+  const config = materials[key];
+  gem.material.dispose();
+  gem.material = createMaterial(config);
+  setHue(config.hue);
+  setSat(config.sat);
+  markChips(rowMat, key);
+  updateHeader();
+}
+function selectCut(key) {
+  currentCut = key;
+  const old = gem.geometry;
+  gem.geometry = finishGeometry(cuts[key].build());
+  old.dispose();
+  markChips(rowCut, key);
+  updateHeader();
+}
+
+Object.entries(materials).forEach(([key, config]) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'chip';
+  button.textContent = config.name;
+  button.dataset.key = key;
+  button.addEventListener('click', () => selectMaterial(key));
+  rowMat.appendChild(button);
+});
+Object.entries(cuts).forEach(([key, config]) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'chip';
+  button.textContent = config.name;
+  button.dataset.key = key;
+  button.addEventListener('click', () => selectCut(key));
+  rowCut.appendChild(button);
+});
+
+markChips(rowMat, currentMaterial);
+markChips(rowCut, currentCut);
+setHue(materials[currentMaterial].hue);
+setSat(materials[currentMaterial].sat);
+setSize(72);
+updateHeader();
+
+hueRange.addEventListener('input', event => setHue(event.target.value));
+satRange.addEventListener('input', event => setSat(event.target.value));
+sizeRange.addEventListener('input', event => setSize(event.target.value));
+document.getElementById('tuneBtn').addEventListener('click', () => document.getElementById('tune').classList.toggle('open'));
+
+let dragging = false;
+let pointerX = 0;
+let pointerY = 0;
+let velocityX = 0;
+let velocityY = 0;
+let idleFrames = 0;
+const canvas = renderer.domElement;
+const hint = document.getElementById('hint');
+canvas.addEventListener('pointerdown', event => {
+  dragging = true;
+  pointerX = event.clientX;
+  pointerY = event.clientY;
+  idleFrames = 0;
+  hint.style.opacity = 0;
+  canvas.setPointerCapture(event.pointerId);
+});
+canvas.addEventListener('pointermove', event => {
+  if (!dragging) return;
+  velocityX = (event.clientX - pointerX) * 0.006;
+  velocityY = (event.clientY - pointerY) * 0.006;
+  root.rotation.y += velocityX;
+  root.rotation.x += velocityY;
+  pointerX = event.clientX;
+  pointerY = event.clientY;
+});
+function endDrag() { dragging = false; }
+canvas.addEventListener('pointerup', endDrag);
+canvas.addEventListener('pointercancel', endDrag);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+const clock = new THREE.Clock();
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function animate() {
+  requestAnimationFrame(animate);
+  const time = clock.getElapsedTime();
+  keyLight.position.set(Math.sin(time * 0.45) * 3.5, 4.4, Math.cos(time * 0.45) * 3.5);
+  sparkleGroup.children.forEach(star => {
+    const pulse = Math.sin(time * star.userData.speed + star.userData.phase) * 0.5 + 0.5;
+    star.material.opacity = 0.22 + pulse * 0.62;
+    star.rotation.x += 0.01;
+    star.rotation.y += 0.014;
+  });
+  if (!dragging) {
+    root.rotation.y += velocityX;
+    root.rotation.x += velocityY;
+    velocityX *= 0.94;
+    velocityY *= 0.94;
+    idleFrames++;
+    if (!reduceMotion && idleFrames > 90) root.rotation.y += 0.004;
+  }
+  root.rotation.x = Math.max(-1.15, Math.min(1.15, root.rotation.x));
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
