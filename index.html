@@ -5,490 +5,112 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Gem Atelier</title>
 <style>
-  :root {
-    --ink: #0f0c14;
-    --velvet: #171221;
-    --gold: #d4b483;
-    --gold-dim: #8a7658;
-    --paper: #efe9de;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--ink); }
-  body {
-    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
-    color: var(--paper);
-    background:
-      radial-gradient(ellipse 70% 45% at 50% 24%, #2a1e3c 0%, transparent 68%),
-      radial-gradient(ellipse 95% 75% at 50% 105%, #08060d 0%, transparent 70%),
-      linear-gradient(180deg, #171221 0%, #0d0a13 100%);
-  }
-  #stage { position: fixed; inset: 0; touch-action: none; }
-  canvas { display: block; width: 100%; height: 100%; }
-  header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 2;
-    pointer-events: none;
-    text-align: center;
-    padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 0;
-  }
-  .eyebrow {
-    font-size: 9px;
-    letter-spacing: .34em;
-    color: var(--gold-dim);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  h1 {
-    font-family: "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
-    font-weight: 500;
-    font-size: clamp(24px, 6vw, 36px);
-    letter-spacing: .12em;
-    text-shadow: 0 2px 24px rgba(0,0,0,.65);
-  }
-  .sub {
-    margin-top: 5px;
-    font-size: 11px;
-    letter-spacing: .18em;
-    color: rgba(212, 180, 131, .68);
-  }
-  #hint {
-    position: fixed;
-    left: 0;
-    right: 0;
-    top: 39%;
-    z-index: 2;
-    pointer-events: none;
-    text-align: center;
-    font-size: 10px;
-    letter-spacing: .28em;
-    color: rgba(212, 180, 131, .42);
-    transition: opacity .5s ease;
-  }
-  #panel {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 3;
-    padding: 10px 0 calc(env(safe-area-inset-bottom, 0px) + 12px);
-    background: linear-gradient(to top, rgba(10,8,16,.95) 62%, transparent);
-  }
-  .rowlabel {
-    font-size: 9px;
-    letter-spacing: .32em;
-    color: rgba(212,180,131,.48);
-    padding: 0 20px 5px;
-    text-transform: uppercase;
-  }
-  .row {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 2px 18px 10px;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .row::-webkit-scrollbar { display: none; }
-  .chip {
-    flex: 0 0 auto;
-    min-height: 34px;
-    border: 1px solid rgba(212,180,131,.24);
-    border-radius: 999px;
-    padding: 8px 15px;
-    color: rgba(239,233,222,.72);
-    background: rgba(23,18,33,.64);
-    font: 12px/1 "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
-    letter-spacing: .08em;
-    cursor: pointer;
-  }
-  .row.cuts .chip { border-radius: 8px; font-size: 11px; }
-  .chip.on { color: var(--ink); background: var(--gold); border-color: var(--gold); font-weight: 700; }
-  .chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-  #tuneBtn {
-    position: fixed;
-    right: 14px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 158px);
-    z-index: 4;
-    border: 1px solid rgba(212,180,131,.42);
-    border-radius: 999px;
-    padding: 8px 14px;
-    color: var(--gold);
-    background: rgba(23,18,33,.74);
-    font: 11px/1 "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
-    letter-spacing: .18em;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-  }
-  #tune {
-    position: fixed;
-    right: 12px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 200px);
-    z-index: 4;
-    display: none;
-    width: min(78vw, 280px);
-    padding: 16px 16px 12px;
-    border: 1px solid rgba(212,180,131,.30);
-    border-radius: 8px;
-    background: rgba(16,12,24,.90);
-    backdrop-filter: blur(12px);
-  }
-  #tune.open { display: block; }
-  .knob { margin-bottom: 12px; }
-  .knob label {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 6px;
-    color: rgba(212,180,131,.72);
-    font-size: 10px;
-    letter-spacing: .20em;
-  }
-  input[type=range] {
-    width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    appearance: none;
-    outline: none;
-    background: rgba(212,180,131,.25);
-  }
-  input[type=range]::-webkit-slider-thumb {
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid var(--gold);
-    background: var(--paper);
-    box-shadow: 0 1px 6px rgba(0,0,0,.5);
-  }
-  #hueRange { background: linear-gradient(to right, #f55, #ff5, #5f5, #5ff, #55f, #f5f, #f55); }
-  #toast {
-    position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 8px);
-    left: 50%;
-    z-index: 9;
-    display: none;
-    max-width: 88vw;
-    transform: translateX(-50%);
-    border: 1px solid rgba(255,120,120,.5);
-    border-radius: 8px;
-    padding: 8px 12px;
-    color: #ffd7d7;
-    background: rgba(90,20,30,.92);
-    font-size: 11px;
-    line-height: 1.5;
-    word-break: break-word;
-  }
+  :root{--ink:#0f0c14;--velvet:#171221;--gold:#d4b483;--gold-dim:#8a7658;--paper:#efe9de;}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;background:var(--ink);}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;color:var(--paper);background:radial-gradient(ellipse 90% 55% at 50% 26%,#241a33 0%,transparent 60%),radial-gradient(ellipse 120% 90% at 50% 110%,#0a0810 0%,transparent 70%),var(--velvet);}
+  #stage{position:fixed;inset:0;touch-action:none;} canvas{display:block;width:100%;height:100%;}
+  header{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top,0px) + 16px) 24px 0;text-align:center;pointer-events:none;z-index:2;}
+  .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:8px;}
+  h1{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-weight:500;font-size:clamp(22px,6vw,34px);letter-spacing:.14em;text-shadow:0 2px 24px rgba(0,0,0,.6);transition:opacity .3s;}
+  .sub{margin-top:5px;font-size:11px;letter-spacing:.18em;color:rgba(212,180,131,.6);transition:opacity .3s;}
+  .fading h1,.fading .sub{opacity:0;}
+  #panel{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:10px 0 calc(env(safe-area-inset-bottom,0px) + 12px);background:linear-gradient(to top,rgba(10,8,16,.92) 60%,transparent);}
+  .rowlabel{font-size:9px;letter-spacing:.34em;color:rgba(212,180,131,.45);padding:0 20px 5px;text-transform:uppercase;}
+  .row{display:flex;gap:8px;overflow-x:auto;padding:2px 18px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}.row::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:12px;letter-spacing:.1em;color:rgba(239,233,222,.66);background:rgba(23,18,33,.6);border:1px solid rgba(212,180,131,.22);border-radius:999px;padding:8px 15px;cursor:pointer;transition:color .2s,border-color .2s,background .2s;}
+  .row.cuts .chip{border-radius:9px;font-size:11px;}.chip:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}.chip.on{color:var(--ink);background:var(--gold);border-color:var(--gold);font-weight:600;}
+  #tuneBtn{position:fixed;right:14px;z-index:4;bottom:calc(env(safe-area-inset-bottom,0px) + 158px);font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:11px;letter-spacing:.2em;color:var(--gold);background:rgba(23,18,33,.7);border:1px solid rgba(212,180,131,.4);border-radius:999px;padding:8px 14px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+  #tune{position:fixed;right:12px;z-index:4;bottom:calc(env(safe-area-inset-bottom,0px) + 200px);width:min(78vw,280px);background:rgba(16,12,24,.88);border:1px solid rgba(212,180,131,.3);border-radius:8px;padding:16px 16px 12px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:none;}#tune.open{display:block;}
+  .knob{margin-bottom:12px;}.knob label{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.24em;color:rgba(212,180,131,.7);margin-bottom:6px;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:rgba(212,180,131,.25);outline:none;}input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--paper);border:2px solid var(--gold);box-shadow:0 1px 6px rgba(0,0,0,.5);}#hueRange{background:linear-gradient(to right,#f55,#ff5,#5f5,#5ff,#55f,#f5f,#f55);}
+  .hint{position:fixed;left:0;right:0;top:38%;text-align:center;font-size:10px;letter-spacing:.3em;color:rgba(212,180,131,.4);z-index:2;pointer-events:none;transition:opacity 1s;}
+  #toast{position:fixed;top:calc(env(safe-area-inset-top,0px)+8px);left:50%;transform:translateX(-50%);z-index:9;max-width:88vw;font-size:11px;line-height:1.5;background:rgba(90,20,30,.92);color:#ffd7d7;border:1px solid rgba(255,120,120,.5);border-radius:8px;padding:8px 12px;display:none;word-break:break-all;}
 </style>
 </head>
 <body>
 <div id="stage"></div>
-<header>
-  <div class="eyebrow">Gem Atelier / Optics of Light</div>
-  <h1 id="title">Diamond</h1>
-  <div class="sub" id="sub">Brilliant cut</div>
-</header>
-<p id="hint">DRAG TO TURN</p>
-<div id="toast"></div>
+<header id="header"><div class="eyebrow">Gem Atelier / Optics of Light</div><h1 id="title">Diamond</h1><div class="sub" id="sub"></div></header>
+<p class="hint" id="hint">DRAG TO TURN</p><div id="toast"></div>
 <button id="tuneBtn" type="button">TUNE</button>
-<div id="tune">
-  <div class="knob"><label><span>HUE</span><span id="hueVal"></span></label><input type="range" id="hueRange" min="0" max="360" value="210"></div>
-  <div class="knob"><label><span>SAT</span><span id="satVal"></span></label><input type="range" id="satRange" min="0" max="100" value="45"></div>
-  <div class="knob"><label><span>SIZE</span><span id="sizeVal"></span></label><input type="range" id="sizeRange" min="45" max="120" value="72"></div>
-</div>
-<div id="panel">
-  <div class="rowlabel">Material</div>
-  <div class="row" id="rowMat"></div>
-  <div class="rowlabel">Cut</div>
-  <div class="row cuts" id="rowCut"></div>
-</div>
+<div id="tune"><div class="knob"><label><span>HUE</span><span id="hueVal"></span></label><input type="range" id="hueRange" min="0" max="360" value="210"></div><div class="knob"><label><span>SAT</span><span id="satVal"></span></label><input type="range" id="satRange" min="0" max="100" value="50"></div><div class="knob"><label><span>SIZE</span><span id="sizeVal"></span></label><input type="range" id="sizeRange" min="45" max="120" value="72"></div></div>
+<div id="panel"><div class="rowlabel">Material</div><div class="row" id="rowMat"></div><div class="rowlabel">Cut</div><div class="row cuts" id="rowCut"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 'use strict';
+const toastEl=document.getElementById('toast');
+function toast(msg){toastEl.textContent=msg;toastEl.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(()=>toastEl.style.display='none',8000);}
+window.addEventListener('error',e=>toast('[error] '+e.message));
+if(!window.THREE){toast('Three.js could not be loaded.');throw new Error('Three.js is unavailable');}
 
-const toastEl = document.getElementById('toast');
-function toast(message) {
-  toastEl.textContent = message;
-  toastEl.style.display = 'block';
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => { toastEl.style.display = 'none'; }, 8000);
-}
-window.addEventListener('error', event => toast('[error] ' + event.message));
-
-if (!window.THREE) {
-  toast('Three.js could not be loaded. Check the network connection.');
-  throw new Error('Three.js is unavailable');
-}
-
-const stage = document.getElementById('stage');
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.outputEncoding = THREE.sRGBEncoding;
-stage.appendChild(renderer.domElement);
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 80);
-camera.position.set(0, 0.18, 5.0);
-
-const root = new THREE.Group();
-scene.add(root);
-
-const keyLight = new THREE.DirectionalLight(0xfff4de, 2.6);
-keyLight.position.set(3.5, 4.5, 4.0);
-scene.add(keyLight);
-const rimLight = new THREE.DirectionalLight(0xaec7ff, 1.7);
-rimLight.position.set(-4.0, 1.5, 2.5);
-scene.add(rimLight);
-scene.add(new THREE.AmbientLight(0x45395a, 1.2));
-
-const sparkleGroup = new THREE.Group();
-scene.add(sparkleGroup);
-const sparkleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.78 });
-for (let i = 0; i < 36; i++) {
-  const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.012 + Math.random() * 0.018, 0), sparkleMaterial.clone());
-  const radius = 1.65 + Math.random() * 1.35;
-  const angle = Math.random() * Math.PI * 2;
-  star.position.set(Math.cos(angle) * radius, -0.8 + Math.random() * 2.8, Math.sin(angle) * radius - 1.2);
-  star.userData.phase = Math.random() * Math.PI * 2;
-  star.userData.speed = 0.7 + Math.random() * 1.4;
-  sparkleGroup.add(star);
-}
-
-const materials = {
-  diamond: { name: 'Diamond', hue: 210, sat: 45, options: { color: 0xdfeeff, roughness: 0.04, metalness: 0.0, transparent: true, opacity: 0.72, reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.02 } },
-  crystal: { name: 'Crystal', hue: 190, sat: 18, options: { color: 0xe7fbff, roughness: 0.02, metalness: 0.0, transparent: true, opacity: 0.55, reflectivity: 0.9, clearcoat: 1.0 } },
-  ruby: { name: 'Ruby', hue: 350, sat: 90, options: { color: 0xcc1d55, roughness: 0.16, metalness: 0.0, reflectivity: 0.8, clearcoat: 0.95 } },
-  opal: { name: 'Opal', hue: 28, sat: 58, options: { color: 0xfff2dc, roughness: 0.32, metalness: 0.0, reflectivity: 0.62, clearcoat: 0.72 } },
-  emerald: { name: 'Emerald', hue: 146, sat: 82, options: { color: 0x1fd28b, roughness: 0.10, metalness: 0.0, reflectivity: 0.9, clearcoat: 1.0 } },
-  amethyst: { name: 'Amethyst', hue: 278, sat: 76, options: { color: 0x8d55ff, roughness: 0.11, metalness: 0.0, reflectivity: 0.82, clearcoat: 1.0 } },
-  amber: { name: 'Amber', hue: 38, sat: 88, options: { color: 0xffaa35, roughness: 0.18, metalness: 0.0, transparent: true, opacity: 0.82, reflectivity: 0.75, clearcoat: 0.86 } }
+const CHUNK=`
+float spow(float x,float y){return pow(max(x,0.0001),y);}
+float hash(vec3 p){p=fract(p*0.3183099+0.1);p*=17.0;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+vec3 hash3(vec3 p){return vec3(hash(p),hash(p+31.7),hash(p+113.3));}
+float vnoise(vec3 p){vec3 ip=floor(p);vec3 f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(mix(hash(ip),hash(ip+vec3(1.0,0.0,0.0)),f.x),mix(hash(ip+vec3(0.0,1.0,0.0)),hash(ip+vec3(1.0,1.0,0.0)),f.x),f.y),mix(mix(hash(ip+vec3(0.0,0.0,1.0)),hash(ip+vec3(1.0,0.0,1.0)),f.x),mix(hash(ip+vec3(0.0,1.0,1.0)),hash(ip+vec3(1.0,1.0,1.0)),f.x),f.y),f.z);}
+float fbm(vec3 p){float v=0.0;float a=0.5;for(int k=0;k<4;k++){v+=a*vnoise(p);p*=2.03;a*=0.5;}return v;}
+vec3 hsv2rgb(vec3 c){vec3 rgb=clamp(abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);rgb=rgb*rgb*(3.0-2.0*rgb);return c.z*mix(vec3(1.0),rgb,c.y);}
+float fres(vec3 N,vec3 V,float p){return spow(clamp(1.0-dot(N,V),0.0,1.0),p);}
+`;
+const VERT=`varying vec3 vN;varying vec3 vW;varying vec3 vO;void main(){vO=position;vec4 wp=modelMatrix*vec4(position,1.0);vW=wp.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*wp;}`;
+const HEAD=`precision highp float;varying vec3 vN;varying vec3 vW;varying vec3 vO;uniform float uTime;uniform vec3 uL1;uniform vec3 uL2;uniform float uHue;uniform float uSat;${CHUNK}`;
+const FRAG={
+diamond:HEAD+`void main(){vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vW);vec3 L1=normalize(uL1-vW);vec3 L2=normalize(uL2-vW);vec3 R=reflect(-V,N);float facet=hash(floor(N*24.0+0.5));float ndv=clamp(dot(N,V),0.0,1.0);vec3 tintD=hsv2rgb(vec3(uHue,uSat*0.35,0.9));vec3 body=mix(vec3(0.05,0.05,0.08),tintD,spow(ndv,1.5)*0.35+facet*0.15);float disp=fract(ndv*2.4+facet*3.0+uTime*0.02);vec3 fireCol=hsv2rgb(vec3(disp,0.75,1.0));float g1=spow(clamp(dot(R,L1),0.0,1.0),240.0);float g2=spow(clamp(dot(R,L2),0.0,1.0),240.0);float gw=spow(clamp(dot(R,L1),0.0,1.0),900.0)*3.0+spow(clamp(dot(R,L2),0.0,1.0),900.0)*3.0;float tw=smoothstep(0.94,1.0,sin(facet*40.0+uTime*2.2)*0.5+0.5)*(0.3+0.7*facet);vec3 inner=hsv2rgb(vec3(fract(facet*7.0+uTime*0.05),0.8,1.0))*tw*0.9;vec3 col=body+fireCol*(g1+g2)*2.6+vec3(1.0)*gw+inner+tintD*fres(N,V,3.0)*0.6;gl_FragColor=vec4(col,1.0);}`,
+clear:HEAD+`float softbox2(vec3 R,vec3 d,float s){return spow(clamp(dot(R,normalize(d)),0.0,1.0),s);}void main(){vec3 N=normalize(vN);if(!gl_FrontFacing)N=-N;vec3 V=normalize(cameraPosition-vW);vec3 L1=normalize(uL1-vW);vec3 L2=normalize(uL2-vW);vec3 R=reflect(-V,N);float fr=fres(N,V,2.2);float ndv=clamp(dot(N,V),0.0,1.0);vec3 tint=hsv2rgb(vec3(uHue,uSat,1.0));vec3 col=tint*0.10;col+=vec3(1.0,0.98,0.95)*softbox2(R,vec3(0.0,1.0,0.2),20.0)*0.5;col+=vec3(0.9,0.95,1.0)*softbox2(R,vec3(-0.8,0.3,0.5),50.0)*0.35;float hi1=spow(clamp(dot(R,L1),0.0,1.0),700.0);float hi2=spow(clamp(dot(R,L2),0.0,1.0),700.0);col+=vec3(1.0)*(hi1*4.0+hi2*2.5);col+=hsv2rgb(vec3(fract(ndv*1.8+uHue),0.6,1.0))*fr*0.35;col+=vec3(0.9,0.95,1.0)*fr*0.6;float alpha=clamp(0.15+fr*0.78+hi1+hi2,0.0,1.0);gl_FragColor=vec4(col,alpha);}`,
+glossy:HEAD+`float softbox(vec3 R,vec3 d,float size){return spow(clamp(dot(R,normalize(d)),0.0,1.0),size);}void main(){vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vW);vec3 L1=normalize(uL1-vW);vec3 L2=normalize(uL2-vW);vec3 R=reflect(-V,N);vec3 base=hsv2rgb(vec3(uHue,uSat,0.34));float ndl=clamp(dot(N,L1),0.0,1.0);vec3 col=base*(0.25+0.75*ndl);col+=vec3(1.0,0.98,0.95)*softbox(R,vec3(0.0,1.0,0.2),18.0)*0.55;col+=vec3(0.9,0.92,1.0)*softbox(R,vec3(-0.8,0.3,0.5),40.0)*0.35;col+=vec3(1.0,0.9,0.85)*softbox(R,vec3(0.9,0.1,0.4),60.0)*0.3;col+=vec3(1.0)*spow(clamp(dot(R,L1),0.0,1.0),600.0)*4.0;col+=vec3(1.0)*spow(clamp(dot(R,L2),0.0,1.0),600.0)*2.5;col+=mix(vec3(0.4),base*2.0,0.5)*fres(N,V,4.0);gl_FragColor=vec4(col,1.0);}`,
+glitter:HEAD+`void main(){vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vW);vec3 L1=normalize(uL1-vW);vec3 L2=normalize(uL2-vW);float ndl=clamp(dot(N,L1),0.0,1.0)*0.5+0.5;vec3 col=hsv2rgb(vec3(uHue,uSat,0.18))*ndl;vec3 cell=floor(vO*34.0);vec3 jit=hash3(cell)*2.0-1.0;vec3 Nf=normalize(N+jit*0.85);float s1=spow(clamp(dot(reflect(-L1,Nf),V),0.0,1.0),90.0);float s2=spow(clamp(dot(reflect(-L2,Nf),V),0.0,1.0),90.0);float flash=smoothstep(0.35,0.95,s1+s2);vec3 fc=hsv2rgb(vec3(fract(uHue+hash(cell+7.0)*0.3-0.1),clamp(uSat*0.7+0.15,0.0,1.0),1.0));col+=fc*flash*3.2;float dust=smoothstep(0.75,1.0,hash(cell+3.0))*clamp(dot(Nf,L1),0.0,1.0);col+=fc*dust*0.35;col+=hsv2rgb(vec3(uHue,uSat*0.5,0.5))*fres(N,V,3.5)*0.6;gl_FragColor=vec4(col,1.0);}`,
+opal:HEAD+`void main(){vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vW);vec3 L1=normalize(uL1-vW);float ndv=clamp(dot(N,V),0.0,1.0);float wrap=clamp(dot(N,L1)*0.5+0.5,0.0,1.0);vec3 milk=mix(vec3(0.72,0.72,0.78),vec3(0.97,0.96,0.99),wrap);float pn=fbm(vO*3.2+5.0);float pat=smoothstep(0.42,0.62,fbm(vO*4.5+11.0));float hue=fract(pn*2.2+ndv*0.9+uHue+uTime*0.015);vec3 play=hsv2rgb(vec3(hue,clamp(uSat+0.3,0.0,1.0),1.0));float amt=pat*(0.35+0.85*spow(1.0-ndv,1.2));vec3 col=milk+play*amt*0.9;col+=vec3(0.9,0.85,1.0)*fres(N,V,2.5)*0.3;col+=vec3(1.0)*spow(clamp(dot(reflect(-V,N),L1),0.0,1.0),120.0)*0.8;gl_FragColor=vec4(col,1.0);}`,
+creamy:HEAD+`void main(){vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vW);vec3 L1=normalize(uL1-vW);vec3 L2=normalize(uL2-vW);float blush=fbm(vO*2.0)*0.6;vec3 c1=hsv2rgb(vec3(uHue,uSat*0.35,0.95));vec3 c2=hsv2rgb(vec3(fract(uHue+0.04),uSat*0.55,0.92));vec3 base=mix(c1,c2,blush);float wrap=clamp(dot(N,L1)*0.5+0.5,0.0,1.0);vec3 col=base*(0.35+0.65*wrap);float tr=spow(clamp(dot(V,-L1),0.0,1.0),3.0)*0.55+spow(clamp(dot(V,-L2),0.0,1.0),3.0)*0.3;col+=hsv2rgb(vec3(uHue,clamp(uSat*0.8+0.1,0.0,1.0),1.0))*tr;col+=c1*fres(N,V,2.8)*0.35;col+=vec3(1.0)*spow(clamp(dot(reflect(-V,N),L1),0.0,1.0),24.0)*0.12;gl_FragColor=vec4(col,1.0);}`,
+butterfly:HEAD+`void main(){vec3 N=normalize(vN);if(!gl_FrontFacing)N=-N;vec3 V=normalize(cameraPosition-vW);vec3 L1=normalize(uL1-vW);float ndv=clamp(dot(N,V),0.0,1.0);float ndl=clamp(dot(N,L1),0.0,1.0);float hue=fract(uHue+(1.0-ndv)*0.22);vec3 col=hsv2rgb(vec3(hue,clamp(uSat+0.2,0.0,1.0),1.0))*(0.4+0.6*ndl);float ridge=sin(vO.y*160.0+vnoise(vO*40.0)*6.0)*0.5+0.5;col*=0.85+0.3*ridge;vec3 cell=floor(vO*140.0);vec3 Nf=normalize(N+(hash3(cell)*2.0-1.0)*0.6);float sp=spow(clamp(dot(reflect(-L1,Nf),V),0.0,1.0),70.0);col+=vec3(0.85,0.95,1.0)*smoothstep(0.4,0.9,sp)*2.2;col+=hsv2rgb(vec3(fract(hue+0.12),0.8,0.9))*fres(N,V,3.0)*0.5;gl_FragColor=vec4(col,1.0);}`
 };
 
-const cuts = {
-  brilliant: { name: 'Brilliant', build: () => new THREE.OctahedronGeometry(1.22, 3) },
-  fine: { name: 'Fine', build: () => new THREE.IcosahedronGeometry(1.18, 3) },
-  rose: { name: 'Rose', build: () => new THREE.DodecahedronGeometry(1.14, 2) },
-  emerald: { name: 'Emerald', build: () => makeEmeraldGeometry() },
-  princess: { name: 'Princess', build: () => makePrincessGeometry() },
-  cushion: { name: 'Cushion', build: () => makeCushionGeometry() },
-  pear: { name: 'Pear', build: () => makePearGeometry() },
-  heart: { name: 'Heart', build: () => makeHeartGeometry() },
-  cabochon: { name: 'Cabochon', build: () => new THREE.SphereGeometry(1.05, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.74) },
-  rough: { name: 'Rough', build: () => new THREE.IcosahedronGeometry(1.12, 1) }
+function mergeFlat(parts){let total=0;const arrs=parts.map(g=>{const a=g.toNonIndexed().attributes.position.array;total+=a.length;return a;});const pos=new Float32Array(total);let off=0;for(const a of arrs){pos.set(a,off);off+=a.length;}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.computeVertexNormals();return geo;}
+function normalizeGeo(geo){geo.center();geo.computeBoundingSphere();const k=1.05/geo.boundingSphere.radius;geo.scale(k,k,k);geo.computeVertexNormals();return geo;}
+function cyl(rt,rb,h,seg,y,theta){const g=new THREE.CylinderGeometry(rt,rb,h,seg,1,false,theta||0);g.translate(0,y,0);return g;}
+function extrudeCut(shape,opts){const geo=new THREE.ExtrudeGeometry(shape,Object.assign({depth:0.42,bevelEnabled:true,bevelThickness:0.3,bevelSize:0.18,bevelSegments:1,curveSegments:6},opts||{}));geo.rotateX(-Math.PI/2);return normalizeGeo(mergeFlat([geo]));}
+const CUT_BUILDERS={
+brilliant(){const pts=[new THREE.Vector2(0.0,0.62),new THREE.Vector2(0.5,0.6),new THREE.Vector2(0.98,0.2),new THREE.Vector2(1.0,0.05),new THREE.Vector2(0.98,-0.05),new THREE.Vector2(0.02,-1.05)];return normalizeGeo(mergeFlat([new THREE.LatheGeometry(pts,16)]));},
+fine(){const pts=[new THREE.Vector2(0.0,0.62),new THREE.Vector2(0.34,0.61),new THREE.Vector2(0.62,0.5),new THREE.Vector2(0.84,0.34),new THREE.Vector2(0.98,0.16),new THREE.Vector2(1.0,0.04),new THREE.Vector2(0.98,-0.06),new THREE.Vector2(0.7,-0.5),new THREE.Vector2(0.3,-0.85),new THREE.Vector2(0.02,-1.08)];return normalizeGeo(mergeFlat([new THREE.LatheGeometry(pts,24)]));},
+rose(){const dome=new THREE.SphereGeometry(1.0,10,4,0,Math.PI*2,0,Math.PI/2);const base=new THREE.CircleGeometry(1.0,10);base.rotateX(Math.PI/2);return normalizeGeo(mergeFlat([dome,base]));},
+briolette(){const prof=[[0.0,1.25],[0.18,1.0],[0.38,0.72],[0.55,0.42],[0.66,0.1],[0.68,-0.2],[0.6,-0.52],[0.42,-0.78],[0.18,-0.95],[0.0,-1.0]];const pts=prof.map((p,i)=>new THREE.Vector2(p[0]*(i%2===0?1.0:0.94),p[1]));return normalizeGeo(mergeFlat([new THREE.LatheGeometry(pts,12)]));},
+step(){const geo=mergeFlat([cyl(0.6,0.78,0.16,8,0.5),cyl(0.78,0.92,0.16,8,0.34),cyl(0.92,1.0,0.16,8,0.18),cyl(1.0,1.0,0.14,8,0.03),cyl(1.0,0.86,0.2,8,-0.14),cyl(0.86,0.66,0.2,8,-0.34),cyl(0.66,0.4,0.2,8,-0.54),cyl(0.4,0.1,0.18,8,-0.73)]);geo.scale(1.3,1.0,0.82);geo.computeVertexNormals();return normalizeGeo(geo);},
+princess(){return normalizeGeo(mergeFlat([cyl(0.58,1.0,0.5,4,0.25,Math.PI/4),cyl(1.0,0.03,0.95,4,-0.47,Math.PI/4)]));},
+emerald(){const geo=mergeFlat([cyl(0.72,1.0,0.32,8,0.36),cyl(1.0,1.0,0.22,8,0.09),cyl(1.0,0.5,0.5,8,-0.27)]);geo.scale(1.28,1.0,0.8);geo.computeVertexNormals();return normalizeGeo(geo);},
+cushion(){const s=new THREE.Shape();const w=0.9,r=0.42;s.moveTo(-w+r,-w);s.lineTo(w-r,-w);s.quadraticCurveTo(w,-w,w,-w+r);s.lineTo(w,w-r);s.quadraticCurveTo(w,w,w-r,w);s.lineTo(-w+r,w);s.quadraticCurveTo(-w,w,-w,w-r);s.lineTo(-w,-w+r);s.quadraticCurveTo(-w,-w,-w+r,-w);return extrudeCut(s);},
+oval(){const s=new THREE.Shape();s.absellipse(0,0,0.78,1.05,0,Math.PI*2,false,0);return extrudeCut(s,{curveSegments:14});},
+pear(){const s=new THREE.Shape();s.moveTo(0,1.1);s.quadraticCurveTo(0.55,0.5,0.62,-0.1);s.quadraticCurveTo(0.62,-0.85,0,-0.9);s.quadraticCurveTo(-0.62,-0.85,-0.62,-0.1);s.quadraticCurveTo(-0.55,0.5,0,1.1);return extrudeCut(s,{curveSegments:8});},
+marquise(){const s=new THREE.Shape();s.moveTo(0,1.15);s.quadraticCurveTo(0.72,0,0,-1.15);s.quadraticCurveTo(-0.72,0,0,1.15);return extrudeCut(s,{curveSegments:8});},
+heart(){const s=new THREE.Shape();s.moveTo(0,-1.0);s.bezierCurveTo(-1.3,-0.2,-1.1,0.75,-0.5,0.75);s.bezierCurveTo(-0.15,0.75,0,0.45,0,0.3);s.bezierCurveTo(0,0.45,0.15,0.75,0.5,0.75);s.bezierCurveTo(1.1,0.75,1.3,-0.2,0,-1.0);return extrudeCut(s,{curveSegments:8});},
+trilliant(){const s=new THREE.Shape();s.moveTo(0,1.05);s.quadraticCurveTo(0.66,0.35,0.95,-0.6);s.quadraticCurveTo(0,-0.95,-0.95,-0.6);s.quadraticCurveTo(-0.66,0.35,0,1.05);return extrudeCut(s,{curveSegments:7});},
+cabochon(){const pts=[new THREE.Vector2(0.0,0.62),new THREE.Vector2(0.45,0.54),new THREE.Vector2(0.82,0.28),new THREE.Vector2(1.0,-0.1),new THREE.Vector2(0.98,-0.2),new THREE.Vector2(0.0,-0.24)];return normalizeGeo(new THREE.LatheGeometry(pts,48));},
+sphere(){return normalizeGeo(new THREE.SphereGeometry(1.0,64,48));},rough(){return normalizeGeo(mergeFlat([new THREE.OctahedronGeometry(1.1,0)]));}
 };
+const CUTS=[{key:'brilliant',name:'Brilliant'},{key:'fine',name:'Fine'},{key:'rose',name:'Rose'},{key:'briolette',name:'Briolette'},{key:'step',name:'Step'},{key:'princess',name:'Princess'},{key:'emerald',name:'Emerald'},{key:'cushion',name:'Cushion'},{key:'oval',name:'Oval'},{key:'pear',name:'Pear'},{key:'marquise',name:'Marquise'},{key:'heart',name:'Heart'},{key:'trilliant',name:'Trilliant'},{key:'cabochon',name:'Cabochon'},{key:'sphere',name:'Sphere'},{key:'rough',name:'Rough'}];
+const MATS=[{key:'diamond',name:'Diamond',hue:210,sat:45},{key:'clear',name:'Crystal',hue:195,sat:18},{key:'glossy',name:'Candy',hue:350,sat:90},{key:'glitter',name:'Glitter',hue:280,sat:70},{key:'opal',name:'Opal',hue:0,sat:60},{key:'creamy',name:'Milky',hue:22,sat:35},{key:'butterfly',name:'Butterfly',hue:200,sat:85}];
 
-function finishGeometry(geometry, scaleX = 1, scaleY = 1, scaleZ = 1) {
-  geometry = geometry.toNonIndexed ? geometry.toNonIndexed() : geometry;
-  geometry.center();
-  geometry.scale(scaleX, scaleY, scaleZ);
-  geometry.computeVertexNormals();
-  return geometry;
-}
-function makeEmeraldGeometry() {
-  return finishGeometry(new THREE.BoxGeometry(1.55, 1.95, 0.82, 2, 3, 2));
-}
-function makePrincessGeometry() {
-  return finishGeometry(new THREE.CylinderGeometry(0.72, 1.05, 1.7, 4, 2, false, Math.PI / 4), 1.0, 1.0, 0.82);
-}
-function makeCushionGeometry() {
-  const shape = new THREE.Shape();
-  const w = 0.9, r = 0.34;
-  shape.moveTo(-w + r, -w);
-  shape.lineTo(w - r, -w);
-  shape.quadraticCurveTo(w, -w, w, -w + r);
-  shape.lineTo(w, w - r);
-  shape.quadraticCurveTo(w, w, w - r, w);
-  shape.lineTo(-w + r, w);
-  shape.quadraticCurveTo(-w, w, -w, w - r);
-  shape.lineTo(-w, -w + r);
-  shape.quadraticCurveTo(-w, -w, -w + r, -w);
-  return finishGeometry(new THREE.ExtrudeGeometry(shape, { depth: 0.72, bevelEnabled: true, bevelThickness: 0.24, bevelSize: 0.16, bevelSegments: 1, curveSegments: 8 }), 1.0, 1.0, 1.0);
-}
-function makePearGeometry() {
-  const shape = new THREE.Shape();
-  shape.moveTo(0, 1.14);
-  shape.quadraticCurveTo(0.62, 0.42, 0.68, -0.16);
-  shape.quadraticCurveTo(0.64, -0.88, 0, -0.94);
-  shape.quadraticCurveTo(-0.64, -0.88, -0.68, -0.16);
-  shape.quadraticCurveTo(-0.62, 0.42, 0, 1.14);
-  return finishGeometry(new THREE.ExtrudeGeometry(shape, { depth: 0.62, bevelEnabled: true, bevelThickness: 0.26, bevelSize: 0.16, bevelSegments: 1, curveSegments: 10 }));
-}
-function makeHeartGeometry() {
-  const shape = new THREE.Shape();
-  shape.moveTo(0, -1.0);
-  shape.bezierCurveTo(-1.3, -0.16, -1.12, 0.72, -0.48, 0.76);
-  shape.bezierCurveTo(-0.18, 0.78, 0, 0.46, 0, 0.28);
-  shape.bezierCurveTo(0, 0.46, 0.18, 0.78, 0.48, 0.76);
-  shape.bezierCurveTo(1.12, 0.72, 1.3, -0.16, 0, -1.0);
-  return finishGeometry(new THREE.ExtrudeGeometry(shape, { depth: 0.58, bevelEnabled: true, bevelThickness: 0.22, bevelSize: 0.14, bevelSegments: 1, curveSegments: 10 }));
-}
-
-let currentMaterial = 'diamond';
-let currentCut = 'brilliant';
-let gem = new THREE.Mesh(finishGeometry(cuts.brilliant.build()), createMaterial(materials.diamond));
-gem.rotation.set(-0.18, 0.25, 0.05);
-root.add(gem);
-root.scale.setScalar(0.72);
-
-const titleEl = document.getElementById('title');
-const subEl = document.getElementById('sub');
-const hueRange = document.getElementById('hueRange');
-const satRange = document.getElementById('satRange');
-const sizeRange = document.getElementById('sizeRange');
-const hueVal = document.getElementById('hueVal');
-const satVal = document.getElementById('satVal');
-const sizeVal = document.getElementById('sizeVal');
-const rowMat = document.getElementById('rowMat');
-const rowCut = document.getElementById('rowCut');
-
-function createMaterial(config) {
-  const material = new THREE.MeshPhysicalMaterial(Object.assign({
-    side: THREE.DoubleSide,
-    flatShading: true,
-    emissive: 0x08050c,
-    envMapIntensity: 1.0
-  }, config.options));
-  return material;
-}
-function colorFromHue(hue, saturation) {
-  const color = new THREE.Color();
-  color.setHSL(hue / 360, saturation / 100, 0.58);
-  return color;
-}
-function setHue(value) {
-  hueRange.value = value;
-  hueVal.textContent = value + 'deg';
-  gem.material.color.copy(colorFromHue(Number(value), Number(satRange.value)));
-}
-function setSat(value) {
-  satRange.value = value;
-  satVal.textContent = value + '%';
-  gem.material.color.copy(colorFromHue(Number(hueRange.value), Number(value)));
-}
-function setSize(value) {
-  sizeRange.value = value;
-  root.scale.setScalar(Number(value) / 100);
-  sizeVal.textContent = value + '%';
-}
-function updateHeader() {
-  titleEl.textContent = materials[currentMaterial].name;
-  subEl.textContent = cuts[currentCut].name + ' cut';
-}
-function markChips(row, key) {
-  row.querySelectorAll('.chip').forEach(chip => chip.classList.toggle('on', chip.dataset.key === key));
-}
-function selectMaterial(key) {
-  currentMaterial = key;
-  const config = materials[key];
-  gem.material.dispose();
-  gem.material = createMaterial(config);
-  setHue(config.hue);
-  setSat(config.sat);
-  markChips(rowMat, key);
-  updateHeader();
-}
-function selectCut(key) {
-  currentCut = key;
-  const old = gem.geometry;
-  gem.geometry = finishGeometry(cuts[key].build());
-  old.dispose();
-  markChips(rowCut, key);
-  updateHeader();
-}
-
-Object.entries(materials).forEach(([key, config]) => {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'chip';
-  button.textContent = config.name;
-  button.dataset.key = key;
-  button.addEventListener('click', () => selectMaterial(key));
-  rowMat.appendChild(button);
-});
-Object.entries(cuts).forEach(([key, config]) => {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'chip';
-  button.textContent = config.name;
-  button.dataset.key = key;
-  button.addEventListener('click', () => selectCut(key));
-  rowCut.appendChild(button);
-});
-
-markChips(rowMat, currentMaterial);
-markChips(rowCut, currentCut);
-setHue(materials[currentMaterial].hue);
-setSat(materials[currentMaterial].sat);
-setSize(72);
-updateHeader();
-
-hueRange.addEventListener('input', event => setHue(event.target.value));
-satRange.addEventListener('input', event => setSat(event.target.value));
-sizeRange.addEventListener('input', event => setSize(event.target.value));
-document.getElementById('tuneBtn').addEventListener('click', () => document.getElementById('tune').classList.toggle('open'));
-
-let dragging = false;
-let pointerX = 0;
-let pointerY = 0;
-let velocityX = 0;
-let velocityY = 0;
-let idleFrames = 0;
-const canvas = renderer.domElement;
-const hint = document.getElementById('hint');
-canvas.addEventListener('pointerdown', event => {
-  dragging = true;
-  pointerX = event.clientX;
-  pointerY = event.clientY;
-  idleFrames = 0;
-  hint.style.opacity = 0;
-  canvas.setPointerCapture(event.pointerId);
-});
-canvas.addEventListener('pointermove', event => {
-  if (!dragging) return;
-  velocityX = (event.clientX - pointerX) * 0.006;
-  velocityY = (event.clientY - pointerY) * 0.006;
-  root.rotation.y += velocityX;
-  root.rotation.x += velocityY;
-  pointerX = event.clientX;
-  pointerY = event.clientY;
-});
-function endDrag() { dragging = false; }
-canvas.addEventListener('pointerup', endDrag);
-canvas.addEventListener('pointercancel', endDrag);
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-const clock = new THREE.Clock();
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-function animate() {
-  requestAnimationFrame(animate);
-  const time = clock.getElapsedTime();
-  keyLight.position.set(Math.sin(time * 0.45) * 3.5, 4.4, Math.cos(time * 0.45) * 3.5);
-  sparkleGroup.children.forEach(star => {
-    const pulse = Math.sin(time * star.userData.speed + star.userData.phase) * 0.5 + 0.5;
-    star.material.opacity = 0.22 + pulse * 0.62;
-    star.rotation.x += 0.01;
-    star.rotation.y += 0.014;
-  });
-  if (!dragging) {
-    root.rotation.y += velocityX;
-    root.rotation.x += velocityY;
-    velocityX *= 0.94;
-    velocityY *= 0.94;
-    idleFrames++;
-    if (!reduceMotion && idleFrames > 90) root.rotation.y += 0.004;
-  }
-  root.rotation.x = Math.max(-1.15, Math.min(1.15, root.rotation.x));
-  renderer.render(scene, camera);
-}
-animate();
+const stage=document.getElementById('stage');const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);stage.appendChild(renderer.domElement);
+const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,0.1,50);camera.position.set(0,0.15,4.9);
+const uniforms={uTime:{value:0},uL1:{value:new THREE.Vector3(3,4,3)},uL2:{value:new THREE.Vector3(-4,1,2)},uHue:{value:210/360},uSat:{value:0.45}};
+const materials={};for(const m of MATS){const isClear=m.key==='clear';materials[m.key]=new THREE.ShaderMaterial({vertexShader:VERT,fragmentShader:FRAG[m.key],uniforms,side:THREE.DoubleSide,transparent:isClear,depthWrite:!isClear});}
+const geoCache={};function getGeo(key){if(!geoCache[key])geoCache[key]=CUT_BUILDERS[key]();return geoCache[key];}
+const root=new THREE.Group();scene.add(root);const gem=new THREE.Mesh(getGeo('brilliant'),materials.diamond);root.add(gem);root.scale.setScalar(0.72);
+const titleEl=document.getElementById('title'),subEl=document.getElementById('sub'),headerEl=document.getElementById('header'),hueRange=document.getElementById('hueRange'),satRange=document.getElementById('satRange'),sizeRange=document.getElementById('sizeRange'),hueVal=document.getElementById('hueVal'),satVal=document.getElementById('satVal'),sizeVal=document.getElementById('sizeVal');
+let curMat='diamond',curCut='brilliant';
+function refreshHeader(){headerEl.classList.add('fading');setTimeout(()=>{const m=MATS.find(x=>x.key===curMat);const c=CUTS.find(x=>x.key===curCut);titleEl.textContent=m.name;subEl.textContent=c.name+' cut';headerEl.classList.remove('fading');},180);}
+function markChips(rowId,key){document.querySelectorAll('#'+rowId+' .chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.key===key));}
+function setHue(v){hueRange.value=v;uniforms.uHue.value=v/360;hueVal.textContent=v+'deg';}
+function setSat(v){satRange.value=v;uniforms.uSat.value=v/100;satVal.textContent=v+'%';}
+function setSize(v){sizeRange.value=v;root.scale.setScalar(v/100);sizeVal.textContent=v+'%';}
+const rowMat=document.getElementById('rowMat');for(const m of MATS){const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=m.name;b.dataset.key=m.key;b.addEventListener('click',()=>{curMat=m.key;gem.material=materials[m.key];setHue(m.hue);setSat(m.sat);markChips('rowMat',m.key);refreshHeader();});rowMat.appendChild(b);}
+const rowCut=document.getElementById('rowCut');for(const c of CUTS){const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=c.name;b.dataset.key=c.key;b.addEventListener('click',()=>{curCut=c.key;try{gem.geometry=getGeo(c.key);}catch(err){toast('Cut generation error: '+err.message);}markChips('rowCut',c.key);refreshHeader();});rowCut.appendChild(b);}
+markChips('rowMat','diamond');markChips('rowCut','brilliant');titleEl.textContent='Diamond';subEl.textContent='Brilliant cut';setHue(210);setSat(45);setSize(72);
+hueRange.addEventListener('input',e=>setHue(+e.target.value));satRange.addEventListener('input',e=>setSat(+e.target.value));sizeRange.addEventListener('input',e=>setSize(+e.target.value));document.getElementById('tuneBtn').addEventListener('click',()=>document.getElementById('tune').classList.toggle('open'));
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;let dragging=false,px=0,py=0,vx=0,vy=0,idle=0;const cv=renderer.domElement;
+cv.addEventListener('pointerdown',e=>{dragging=true;px=e.clientX;py=e.clientY;document.getElementById('hint').style.opacity=0;cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointermove',e=>{if(!dragging)return;vx=(e.clientX-px)*0.006;vy=(e.clientY-py)*0.006;root.rotation.y+=vx;root.rotation.x+=vy;px=e.clientX;py=e.clientY;idle=0;});
+const endDrag=()=>{dragging=false;};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+const clock=new THREE.Clock();function tick(){requestAnimationFrame(tick);const t=clock.getElapsedTime();uniforms.uTime.value=t;uniforms.uL1.value.set(Math.sin(t*0.5)*4.0,3.5,Math.cos(t*0.5)*4.0);uniforms.uL2.value.set(Math.cos(t*0.3)*-4.0,1.2+Math.sin(t*0.4),3.0);if(!dragging){root.rotation.y+=vx;root.rotation.x+=vy;vx*=0.94;vy*=0.94;idle++;if(!reduceMotion&&idle>90)root.rotation.y+=0.004;}root.rotation.x=Math.max(-1.2,Math.min(1.2,root.rotation.x));renderer.render(scene,camera);}tick();
 </script>
 </body>
 </html>
